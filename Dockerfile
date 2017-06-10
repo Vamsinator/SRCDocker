@@ -1,4 +1,4 @@
-FROM: ros:indigo-ros-base
+FROM ros:indigo-ros-base
 
 
 #add necssary messages
