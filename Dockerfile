@@ -29,7 +29,7 @@ EXPOSE 32000
 ENV ROS_MASTER_URI http://127.0.0.1:8001
 
 ADD startup.bash startup.bash
-CMD ["python", "./Funstuff/serverSide.py"]
+#CMD ["python", "./Funstuff/serverSide.py"]
 CMD ["./startup.bash"]
 
 
