@@ -1,0 +1,21 @@
+how to use walk controller:
+1. import walk from walkObj
+2. create a walk object (w =walk())
+3. Call walkTest with 3 args (move, secondary info, tertiary info)
+
+move has params
+	0 = LEFT
+	1 = RIGHT
+	2 = START
+	3 = TURN
+	4 = SHIFTLEFT
+	5 = SHIFTRIGHT
+	6 = SHIFTUP
+	7 = REVERSE START
+	8 = REVERSE TURN #Dont use this, walk backwards and then turn nornmally
+	9 = SHIFTR #Move right foot up .1m 
+	10 = SHIFTL #Move left foot up .1m
+	11 = ADJUSTR #Ajust angle of right foot
+	12 = ADJUSTL # Adjust angle of left foot
+	13 = REVERSE
+	
