@@ -18,7 +18,7 @@ RUN apt-get update \
 
 #clone srcsim and set environment bariable
 ENV WS /home/docker/ws
-RUN mkdir -p{WS}/src
+RUN mkdir -p ${WS}/src
 WORKDIR ${WS}
 RUN hg clone https://bitbucket.org/osrf/srcsim ${WS}/src/srcsim
 
