@@ -249,8 +249,8 @@ class walk:
     #first rotate opposite foot and then start walking
         side = int(move)
         first = int(fir)
-        dist = direction
-        curentDist = 0
+        dist = float(direction)
+        currentDist = 0
         while currentDist<dist:
             if side == LEFT:
 	        if first == 1:
@@ -260,7 +260,7 @@ class walk:
 		    #print LEFT_FOOT
 	            first = 0
                     currentDist += .4
-	        else:
+	        if first == 0:
 	            LEFT_FOOT[0] = 0.8
 	            LEFT_FOOT[1] = 0.0	    
                     currentDist += 0.8
@@ -273,10 +273,10 @@ class walk:
 		    #print RIGHT_FOOT
                     first = 0
                     currentDist += 0.4
-                else:
+                if first == 0:
                     RIGHT_FOOT[0] = .8
                     RIGHT_FOOT[1] = 0.0
-                    currentDist += .08
+                    currentDist += .8
 
                 self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, RIGHT_FOOT, 0.0))
             side ^=1
