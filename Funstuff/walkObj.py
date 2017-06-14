@@ -30,10 +30,12 @@ from ihmc_msgs.msg import NeckTrajectoryRosMessage
 from ihmc_msgs.msg import OneDoFJointTrajectoryRosMessage
 from ihmc_msgs.msg import TrajectoryPoint1DRosMessage
 import time
+firstRot = 0.0
 oldAngle =0.0
 #stepCounter = 0
 class walk:
     ROBOT_NAME = None
+    primary = 0
     LEFT_FOOT_FRAME_NAME = None
     RIGHT_FOOT_FRAME_NAME = None
     tfBuffer = None
@@ -96,15 +98,50 @@ class walk:
                 right_foot_world.transform.translation.y -
                 left_foot_world.transform.translation.y
             )**2) / 2.
-        lol = 1.0
-        if yaw<0:
-            lol = -1.0
-        left_offset = [(-radius*sin(yaw)), lol*radius*(1-cos(yaw)), 0]
-        right_offset = [(radius*sin(yaw)), lol*radius*(1-cos(yaw)), 0]
+        left_offset = [-radius*sin(yaw), radius*(1-cos(yaw)), 0]
+        right_offset = [radius*sin(yaw), -radius*(1-cos(yaw)), 0]
+	intermediate_euler = euler_from_quaternion([
+            intermediate_transform.rotation.x,
+            intermediate_transform.rotation.y,
+            intermediate_transform.rotation.z,
+            intermediate_transform.rotation.w])
+        resulting_quat = quaternion_from_euler(
+            intermediate_euler[0], intermediate_euler[1],
+            intermediate_euler[2] + yaw)
+
+        rot = quaternion_matrix([
+            resulting_quat[0], resulting_quat[1], resulting_quat[2], resulting_quat[3]])
+        left_transformedOffset = numpy.dot(rot[0:3, 0:3], left_offset)
+        right_transformedOffset = numpy.dot(rot[0:3, 0:3], right_offset)
+        quat_final = Quaternion(
+            resulting_quat[0], resulting_quat[1], resulting_quat[2], resulting_quat[3])
+
+        left_footstep.location.x += left_transformedOffset[0]
+        left_footstep.location.y += left_transformedOffset[1]
+        left_footstep.location.z += left_transformedOffset[2]
+        left_footstep.orientation = quat_final
+
+        right_footstep.location.x += right_transformedOffset[0]
+        right_footstep.location.y += right_transformedOffset[1]
+        right_footstep.location.z += right_transformedOffset[2]
+        right_footstep.orientation = quat_final
+
         if yaw > 0:
-            return [left_offset, right_offset]
+            return [left_footstep, right_footstep]
         else:
-            return [right_offset, left_offset]
+            return [right_footstep, left_footstep]
+    def getRadius(self):
+        left_foot_world = self.tfBuffer.lookup_transform('world', self.LEFT_FOOT_FRAME_NAME, rospy.Time())
+        right_foot_world = self.tfBuffer.lookup_transform('world', self.RIGHT_FOOT_FRAME_NAME, rospy.Time())
+        radius = sqrt((right_foot_world.transform.translation.x - left_foot_world.transform.translation.x)**2 + (right_foot_world.transform.translation.y - left_foot_world.transform.translation.y)**2)/2.
+        print radius
+        if radius <.13:
+            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [0, .05, 0], 0))
+            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [0, -.05, 0], 0))
+            self.footStepListPublisher.publish(self.msg)
+            self.waitForFootsteps(2)
+            self.msg = copy.deepcopy(self.msgCopy)
+        return
     def walkTest(self, move, direc, fir):
 	global oldAngle
 	self.msg = copy.deepcopy(self.msgCopy)
@@ -122,6 +159,7 @@ class walk:
         ADJUSTR = 11
         ADJUSTL = 12
         REVERSE = 13
+        self.getRadius()
         if move == REVERSE:
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [-.1, 0 , 0], 0))
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [-.1, 0, 0], 0))
@@ -132,18 +170,22 @@ class walk:
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [0, 0, 0], math.pi/36))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(1)
+            return
         if move == ADJUSTL:
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [0, 0, 0], -math.pi/36))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(1)
+            return
         if move == SHIFTR:
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [.1, 0, 0], 0))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(1)
+            return
         if move == SHIFTL:
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [.1, 0, 0], 0))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(1)
+            return
 	if move == SHIFTUP:
 	    self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [.1, 0, 0], 0))
             self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [.1, 0, 0], 0))
@@ -170,8 +212,8 @@ class walk:
 	    self.waitForFootsteps(len(self.msg.footstep_data_list))
 	    return
         if move == RSTART:
-            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [-.05, 0, 0], 0))
-            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [.05, 0, 0], 0))
+            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [0, -.05, 0], 0))
+            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [0, .05, 0], 0))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(2)
             return
@@ -185,38 +227,15 @@ class walk:
         curDistTraveled = 0.0
 	if move == TURN:
 	    rospy.loginfo('Turning')
-            if direction >= 0:
-	        curXpos = abs(.316*(math.sin(direction) + math.sin(oldAngle)))
-	        curYpos = .316*(math.cos(oldAngle)-math.cos(direction))
-	    if direction< 0:
-		curXpos =  abs(-.316*(math.sin(direction) + math.sin(oldAngle)))
-		curYpos = .316*(-1.0*math.cos(oldAngle)+math.cos(direction))
-	    #oldAngle = direction
-            if direction == 0:
-                curYpos = 0
-            if direction >=0:
-		#curYpos -= .05
-    	        retVal = self.createRotationFootStepList(direction)
-		RIGHT_FOOT[0] = curXpos
-		RIGHT_FOOT[1] = (curYpos) 
-	        side = LEFT
-                LEFT_FOOT = retVal[0]
-                RIGHT_FOOT= retVal[1]
-                self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, LEFT_FOOT, direction/(math.pi/2.0)))
-       
-                self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, RIGHT_FOOT, direction/(math.pi/2.0)))
-            if direction <0:
-		#curYpos += .05
-	        LEFT_FOOT[0] = curXpos
-	        LEFT_FOOT[1] = (curYpos)
-	        side = RIGHT
-		retVal = self.createRotationFootStepList(direction)
-                LEFT_FOOT = retVal[1]
-                RIGHT_FOOT = retVal[0]
-	        self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, RIGHT_FOOT,direction/(math.pi/2.0)))
-	        self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, LEFT_FOOT, direction/(math.pi/2.0)))
+            retVal = self.createRotationFootStepList(float(direc))
+	    for i in range(len(retVal)):
+		self.msg.footstep_data_list.append(retVal[i])
 	    self.footStepListPublisher.publish(self.msg)
 	    self.waitForFootsteps(len(self.msg.footstep_data_list))
+            self.msg = copy.deepcopy(self.msgCopy)
+            
+            self.primary = 0
+            #self.walkTest(RSTART, 0, 0)
 	    return
 	curDistTraveled = 0.0
 	if move == RTURN:
@@ -232,7 +251,7 @@ class walk:
                 curYpos = 0
             if direction <0:
 		#curYpos -= .05
-    	        #retVal = self.createRotationFootStepList(direction)
+                #retVal = self.createRotationFootStepList(direction)
 		LEFT_FOOT[0] = curXpos
 		LEFT_FOOT[1] = (curYpos) 
 	        side = LEFT
@@ -301,19 +320,30 @@ class walk:
 # Creates footstep offset from the current foot position. The offset is in foot frame.
     
     def createFootStepOffset(self, stepSide, offset, zrot):
+        global  firstRot
         footstep = self.createFootStepInPlace(stepSide)
         
     # transform the offset to world frame
         quat = footstep.orientation
         rot = tf.transformations.quaternion_matrix([quat.x, quat.y, quat.z, quat.w])
-        transformedOffset = numpy.dot(rot[0:3, 0:3], offset)
-	self.addMarker(zrot)
+        #transformedOffset = numpy.dot(rot[0:3, 0:3], offset)
+	#self.addMarker(zrot)
+        #footstep.location.x += transformedOffset[0]
+        #footstep.location.y += transformedOffset[1]
+        #footstep.location.z += transformedOffset[2]
+        #print self.primary
+        resulting_quat = quaternion_from_euler(footstep.orientation.x, footstep.orientation.y, footstep.orientation.z+zrot)
+        #rot = quaternion_matrix([resulting_quat[0], resulting_quat[1], resulting_quat[2], resulting_quat[3]])
+        #footstep.orientation = Quaternion(resulting_quat[0], resulting_quat[1], resulting_quat[2], resulting_quat[3])
+        transformedOffset =  numpy.dot(rot[0:3, 0:3], offset)
         footstep.location.x += transformedOffset[0]
         footstep.location.y += transformedOffset[1]
         footstep.location.z += transformedOffset[2]
-
-        footstep.orientation.z += zrot
-
+        """
+        if self.primary == 1:
+            footstep.orientation.z -= zrot*(1-2.0/math.pi)
+        """
+        
         return footstep
     def waitForFootsteps(self, numberOfSteps):
         global stepCounter
