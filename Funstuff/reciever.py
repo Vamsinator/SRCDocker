@@ -38,6 +38,7 @@ try:
         stringData = revcall(conn, int(length))
         data = np.fromstring(stringData, dtype='uint8')
         decimg = cv2.imdecode(data, 1)
+        cv2.line(decimg, (145, 0), (145, 544), (0, 0, 225), 5)
         cv2.imwrite('ROBOT.jpg', decimg)
 except KeyboardInterrupt:
     pass

@@ -24,7 +24,6 @@ from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
 from ihmc_msgs.msg import ChestTrajectoryRosMessage
 import random
-import visualProcessor as VP
 from srcsim.msg import Satellite
 import other as O
 gatekeeper = 0

@@ -1,0 +1,64 @@
+#!/bin/bash
+#SET TO TRUE IF NOT FIRST TIME
+first=false
+
+echo "REMOVING ROS, GAZEBO, SRCSIM, /opt/nasa, /opt/ros, .gazebo, .ros, valkyrie, .gradle, .ihmc and AUTOREMOVE"
+cd ~/
+#sudo apt-get purge gazebo7 -y
+sudo apt-get purge srcsim -y
+sudo apt-get purge ros-indigo-* -y 
+sudo apt-get purge python-ros* -y
+rm -r .gazebo
+rm -r .ihmc
+rm -r valkyrie
+rm -r .ros
+rm -r .gradle
+sudo rm -r /opt/nasa /opt/ros
+sudo apt-get autoremove -y
+echo "REINSTALLING"\
+ 
+sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+wget -O - http://packages.osrfoundation.org/gazebo.key | sudo apt-key add -
+sudo sh -c 'echo "deb http://srcsim.gazebosim.org/src trusty main" \ > /etc/apt/sources.list.d/src-latest.list'
+wget -O - http://srcsim.gazebosim.org/src/src.key | sudo apt-key add -
+wget -O - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+sudo apt-get update -y
+sudo apt-get install gazebo7 -y
+sudo apt-get install srcsim -y
+
+if [ first]
+then
+echo 'export IS_GAZEBO=true' >> ~/.bashrc
+echo 'export ROS_IP=127.0.0.1' >> ~/.bashrc
+echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> ~/.bashrc
+
+fi
+
+#sudo update-alternatives --config java # then select openjdk8
+#sudo update-alternatives --config javac # then select openjdk8
+sudo rm /usr/lib/jvm/default-java
+sudo ln -s /usr/lib/jvm/java-8-openjdk-amd64 /usr/lib/jvm/default-java
+
+sudo chown -R $USER:$USER /opt/ros/indigo/share/ihmc_ros_java_adapter
+mkdir -p ${HOME}/.ihmc; curl https://raw.githubusercontent.com/ihmcrobotics/ihmc_ros_core/0.8.0/ihmc_ros_common/configurations/IHMCNetworkParametersTemplate.ini > ${HOME}/.ihmc/IHMCNetworkParameters.ini
+sudo bash -c 'echo "@ros - rtprio 99" > /etc/security/limits.d/ros-rtprio.conf'
+sudo groupadd ros
+sudo usermod -a -G ros $USER
+wget -P /tmp/ http://gazebosim.org/distributions/srcsim/valkyrie_controller.tar.gz
+tar -xvf /tmp/valkyrie_controller.tar.gz -C $HOME
+rm /tmp/valkyrie_controller.tar.gz
+wget -P /tmp/ https://bitbucket.org/osrf/gazebo_models/get/default.tar.gz
+mkdir -p $HOME/.gazebo/models
+tar -xvf /tmp/default.tar.gz -C $HOME/.gazebo/models --strip 1
+rm /tmp/default.tar.gz
+source /opt/nasa/indigo/setup.bash
+roslaunch ihmc_valkyrie_ros valkyrie_warmup_gradle_cache.launch
+
+sudo apt-get install ros-indigo-ros-controllers ros-indigo-ros-control -y
+sudo rosdep init
+rosdep update
+sudo apt-get install ros-indigo-rviz
+( speaker-test -t sine -f 500 )& pid=$! ; sleep 0.1s ; kill -9 $pid
+( speaker-test -t sine -f 500 )& pid=$! ; sleep 0.1s ; kill -9 $pid
+( speaker-test -t sine -f 500 )& pid=$! ; sleep 0.1s ; kill -9 $pid
+

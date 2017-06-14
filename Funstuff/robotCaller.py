@@ -33,7 +33,7 @@ try:
 except KeyboardInterrupt:
     pass
 
-s.close()
+sock.close()
 
 #decimg = cv2.imdecode(data, 1)
 #cv2.imshow('ROBOT', decimg)

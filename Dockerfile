@@ -1,37 +1,46 @@
 FROM ros:indigo-ros-base
-#ADD reinstall.shaween reinstall.shaween
 
-#CMD ["./reinstall.shaween"]
-
-#add necssary messages
+# add ihmc messages
 RUN apt-get update \
  && apt-get install -y \
-	ros-indigo-desktop=1.1.5-0* \
+    build-essential \
+    python-catkin-tools \
+    ros-indigo-catkin \
+    ros-indigo-ihmc-msgs \
+    ros-indigo-rosbag \
+    ros-indigo-tf \
+    ros-indigo-tf2 \
 	ros-indigo-rospy \
 	python-numpy \
 	python-scipy \
-&& rm -rf /var/lib/apt/lists/*
-#RUN catkin_make
-#RUN source /opt/ros/indigo/setup.bash
-#clone srcsim and set environment variable
-RUN sleep 5s
+	ros-indigo-cv-bridge \
+	ros-indigo-geometry-msgs \
+	ros-indigo-ros-controllers \
+	ros-indigo-ros-control \
+ && rm -rf /var/lib/apt/lists/*
+
+# clone srcsim
 ENV WS /home/docker/ws
 RUN mkdir -p ${WS}/src
 WORKDIR ${WS}
 RUN hg clone https://bitbucket.org/osrf/srcsim ${WS}/src/srcsim
-WORKDIR ~/
-#RUN ["pip", "install", "rospy"]
+
+# build srcsim messages
+RUN . /opt/ros/indigo/setup.sh \
+ && catkin config --cmake-args -DBUILD_MSGS_ONLY=True \
+ && catkin config --install \
+ && catkin build
+
+# include bag file with footsteps preprogrammed
+
 EXPOSE 8000
 EXPOSE 8001
-EXPOSE 32000
-ENV ROS_MASTER_URI http://127.0.0.1:8001]
-#mkdir Funstuff
-ADD ./Funstuff/ ./
-ADD ./dockerTest ./
+ENV ROS_MASTER_URI http://127.0.0.1:8001
+ENV PYTHONPATH = $PYTHONPATH:opt/ros/indigo/lib/python2.7/dist-packages
+# startup script
+# simple HTTP server and a roscore
 ADD startup.bash startup.bash
-ENV PYTHONPATH = $PYTHONPATH:/opt/ros/indigo/lib/python2.7/dist-packages/
-#RUN ["python", "./Funstuff/serverSide.py"]
-#CMD ["./startup.bash"]
-#CMD ["echo", "$PATH"]
-RUN ["python", "serverSide.py"]
+ADD Funstuff/* ./
+ADD dockerTest/ ./
+CMD python Task1.py
 

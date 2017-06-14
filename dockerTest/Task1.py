@@ -107,6 +107,8 @@ def Task1Main():
 		pC.adjustPelvis(1.0, 2.0)
 		print O.color.GREEN + "Head to Default" + O.color.END
 		nC.adjustNeck([0.0, 0.0, 0.0], 1.0)
+		print O.color.GREEN + "Un-Breaking Back" + O.color.END
+		tC.pelvisTF([m.radians(0.00), m.radians(0.00), m.radians(0.00)], 1.0, transformP)
 
 	print O.color.BOLD + O.color.CYAN + "Ready for Points" + O.color.END
 	
