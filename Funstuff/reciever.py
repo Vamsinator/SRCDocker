@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import copy
 import rospy
@@ -27,7 +28,7 @@ def revcall(sock, count):
 Limage = 0
 Rimage = 0
 TCP_IP = 'localhost'
-TCP_PORT = 32000 #ENTER PORT STUFF HERE
+TCP_PORT = 31000 #ENTER PORT STUFF HERE
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((TCP_IP, TCP_PORT))
 sock.listen(True)
@@ -41,6 +42,7 @@ try:
         cv2.line(decimg, (145, 0), (145, 544), (0, 0, 225), 5)
         cv2.imwrite('ROBOT.jpg', decimg)
 except KeyboardInterrupt:
-    pass
+    sock.close()
+    pass 
 sock.close()
 

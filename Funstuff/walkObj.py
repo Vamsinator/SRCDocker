@@ -274,29 +274,37 @@ class walk:
     #first rotate opposite foot and then start walking
         side = int(move)
         first = int(fir)
-        if side == LEFT:
-	    if fir == 1:
-		print "first left"
-	        LEFT_FOOT[0] =.4
-	        LEFT_FOOT[1] = 0.0
-		#print LEFT_FOOT
-	        first = 0
-	    else:
-	        LEFT_FOOT[0] = 0.8
-	        LEFT_FOOT[1] = 0.0	    
-	    self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, LEFT_FOOT, 0.0))
-        if side == RIGHT:
-	    if fir == 1: 
-		print "first right"
-                RIGHT_FOOT[0] = .4
-                RIGHT_FOOT[1] = 0.0
-		#print RIGHT_FOOT
-                first = 0
-            else:
-                RIGHT_FOOT[0] = .8
-                RIGHT_FOOT[1] = 0.0
-
-            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, RIGHT_FOOT, 0.0))    
+        direction = float(direc)
+        currentDist = 0
+        while currentDist < direction:
+            if side == LEFT:
+	        if first == 1:
+		    print "first left"
+	            LEFT_FOOT[0] +=.4
+	            LEFT_FOOT[1] = 0.0
+		    #print LEFT_FOOT
+	            first = 0
+                    currentDist += 0.4
+	        else:
+	            LEFT_FOOT[0] += 0.8
+	            LEFT_FOOT[1] = 0.0
+                    currentDist +=0.4
+                 
+	        self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, LEFT_FOOT, 0.0))
+            if side == RIGHT:
+	        if first == 1: 
+		    print "first right"
+                    RIGHT_FOOT[0] += .4
+                    RIGHT_FOOT[1] = 0.0
+		    #print RIGHT_FOOT
+                    first = 0
+                    currentDist += .4
+                else:
+                    RIGHT_FOOT[0] += .8
+                    RIGHT_FOOT[1] = 0.0
+                    currentDist+=.4
+                self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, RIGHT_FOOT, 0.0))    
+            side ^= 1
         self.footStepListPublisher.publish(self.msg)
         rospy.loginfo('walk forward...')
         self.waitForFootsteps(len(self.msg.footstep_data_list))

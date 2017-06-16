@@ -7,33 +7,24 @@ import io as logreader
 import os
 import time
 import math
-from sensor_msgs.msg import Image
-from std_msgs.msg import Float64 
-#import mpmath as mp
-from srcsim.msg import Console
-from scipy import ndimage, stats
 import socket
-bridge = CvBridge()
-from walkObj import walk
-
+flag = 0
 Limage = 0
 Rimage = 0
 TCP_IP = 'localhost'
 TCP_PORT = 32000 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
-try:
-    while True:
-        try:
-            data = raw_input()
-            sock.send(data)
-
-        except socket.error:
-            continue
-except KeyboardInterrupt:
-    pass
-
-sock.close()
-
+def appendPoints(dataList):
+    global data, flag,sock
+    data = str(dataList)
+    flag = 1
+    try:
+        sock.send(data)
+    except socket.error:
+        return
+def closeSocket():
+    global sock
+    sock.close()
 #decimg = cv2.imdecode(data, 1)
 #cv2.imshow('ROBOT', decimg)

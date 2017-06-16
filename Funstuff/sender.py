@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import copy
 import rospy
@@ -18,7 +19,7 @@ bridge = CvBridge()
 Limage = 0
 Rimage = 0
 TCP_IP = 'localhost'
-TCP_PORT = 32000 #ENTER PORT STUFF HERE
+TCP_PORT = 31000 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
 
@@ -103,6 +104,7 @@ if __name__ == '__main__':
 		angPub.publish(360.0)
 		Final1()
 	except rospy.ROSInterruptException:
+		sock.close()
 		pass
 
 
