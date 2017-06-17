@@ -19,7 +19,7 @@ import numpy as np
 import rospy
 from timeit import default_timer
 from sensor_msgs.msg import Image
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import? PointCloud2
 from sensor_msgs.msg import PointCloud
 from sensor_msgs import point_cloud2 as pc2
 import ctypes
@@ -71,7 +71,7 @@ def CloudPreProcessor(pointcloud):
 				test = point[3]
 				s = struct.pack('>f', test)
 				i = struct.unpack('>l', s) [0]
-				pack = ctypes.c_uint32(i).value
+				pack = ctypes.c_uint32(i).data
 				x = point[0]
 				y = point[1]
 				z = point[2]

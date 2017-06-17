@@ -14,7 +14,7 @@ from scipy import ndimage, stats
 import socket
 import Tkinter as tk
 
-TCP_IP = '192.168.2.10'
+TCP_IP = '192.168.2.8'
 TCP_PORT = 8009 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
