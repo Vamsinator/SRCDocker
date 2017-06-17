@@ -20,7 +20,7 @@ import robotCaller as rCall
 Walker = walk()
 Limage = 0
 Rimage = 0
-TCP_IP = '192.168.2.10' 
+TCP_IP = '192.168.2.8' 
 TCP_PORT = 33000 #ENTER PORT STUFF HERE
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((TCP_IP, TCP_PORT))
