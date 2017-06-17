@@ -11,10 +11,11 @@ import socket
 flag = 0
 Limage = 0
 Rimage = 0
-TCP_IP = 'localhost'
-TCP_PORT = 32000 #ENTER PORT STUFF HERE
+TCP_IP = '192.168.0.2'
+TCP_PORT = 35000 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))
+sock.send("started")
 def appendPoints(dataList):
     global data, flag,sock
     data = str(dataList)

@@ -27,7 +27,7 @@ def revcall(sock, count):
     return buf
 Limage = 0
 Rimage = 0
-TCP_IP = 'localhost'
+TCP_IP = '192.168.0.2'
 TCP_PORT = 31000 #ENTER PORT STUFF HERE
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((TCP_IP, TCP_PORT))

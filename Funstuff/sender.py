@@ -18,7 +18,7 @@ bridge = CvBridge()
 
 Limage = 0
 Rimage = 0
-TCP_IP = 'localhost'
+TCP_IP = '192.168.0.2'
 TCP_PORT = 31000 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))

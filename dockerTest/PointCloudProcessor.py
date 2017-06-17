@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-import Task1 as T1
-import other as O
+sys.path.insert(0,'..')
 import numpy as np
 import math as m
+import rospy
 import PointCloudTask1 as PC
 from sensor_msgs.msg import PointCloud
 from geometry_msgs.msg import Point32
@@ -15,10 +15,18 @@ import time as t
 from ihmc_msgs.msg import HandTrajectoryRosMessage
 from ihmc_msgs.msg import ArmTrajectoryRosMessage
 from srcsim.msg import Satellite
-import handControl as hhC
-import makeMarker as mC
-import torsoControl as tC
-import neckController as nC
+import HelperCode as Cont
+from std_msgs.msg import String
+
+
+LComm = rospy.Publisher("/SogiPoseL", PoseStamped, queue_size = 1)
+RComm = rospy.Publisher("/SogiPoseR", PoseStamped, queue_size = 1)
+LPointPUB = rospy.Publisher("/LeftHandle", PointStamped, queue_size = 0)
+RPointPUB = rospy.Publisher("/RightHandle", PointStamped, queue_size = 0)
+
+conn = rospy.Publisher("/Sendback", String, queue_size = 1)
+
+Choosen = rospy.Publisher("/SogiPoints", PointCloud, queue_size = 1)
 
 firstTime = True
 RO = [m.radians(00), m.radians(90), m.radians(90)]
@@ -40,43 +48,6 @@ Bluecolor =  ([0, 0, 100], [50, 50, 255])
 Redcolor = ([70, 0, 0], [200, 10, 10])
 Greycolor = ([20, 20, 20], [170, 170, 170]) #?
 
-def PointPubber(S, SO, side):
-	if side == 0 :
-		
-		LPOINT = PointStamped()
-		LPOINT.point.y, LPOINT.point.z, LPOINT.point.x = S
-		LPOINT.header.frame_id ="head"
-		PC.LPointPUB.publish(LPOINT)
-
-		LPOSE = PoseStamped()
-		LPOSE.header.frame_id = "head"
-		LPOSE.pose.position.x = LPOINT.point.x
-		LPOSE.pose.position.y = LPOINT.point.y
-		LPOSE.pose.position.z = LPOINT.point.z
-		LPOSE.pose.orientation.x = SO[0]
-		LPOSE.pose.orientation.y = SO[1]
-		LPOSE.pose.orientation.z = SO[2]
-		
-		PC.LComm.publish(LPOSE)
-
-	else :
-
-		RPOINT = PointStamped()
-		RPOINT.point.y, RPOINT.point.z, RPOINT.point.x = S
-		RPOINT.header.frame_id ="head"
-		PC.RPointPUB.publish(RPOINT)
-
-		RPOSE = PoseStamped()
-		RPOSE.header.frame_id = "head"
-		RPOSE.pose.position.x = RPOINT.point.x
-		RPOSE.pose.position.y = RPOINT.point.y
-		RPOSE.pose.position.z = RPOINT.point.z
-		RPOSE.pose.orientation.x = SO[0]
-		RPOSE.pose.orientation.y = SO[1]
-		RPOSE.pose.orientation.z = SO[2]
-
-		PC.RComm.publish(RPOSE)
-
 def PointCloudGen(d):
 	GenPointCloud = PointCloud()
 	GenPointCloud.header.frame_id = "head"
@@ -87,7 +58,7 @@ def PointCloudGen(d):
 		point.z = -d[i][1]
 		GenPointCloud.points.append(point)
 	t.sleep(0.05)
-	PC.Choosen.publish(GenPointCloud)
+	Choosen.publish(GenPointCloud)
 def ResetCalcValues():
 	global Xaverage, Yaverage, Zaverage, CPoints, Xval, Yval, Zval
 	Xaverage = [[], []]
@@ -153,8 +124,13 @@ def FindKnobs(PointList):
 					Zaverage[1].append(x[2])
 					CPoints.append(x)
 	if len(CPoints) < 200:
+
 		print O.color.BOLD + O.color.RED + "FATAL PROBLEM" + O.color.END #ADD EXCEPTION
 		#sys.exit(2)
+		stuff = String()
+		stuff.data = "PointList Less than 200!"
+		print stuff.data
+		conn.publish(stuff)
 	PointCloudGen(CPoints)
 	LeftPoint = [-np.average(Xaverage[0])+.03, -np.average(Yaverage[0]) , np.average(Zaverage[0])] # Left(-) or right(+), up down, forward backwards
 	RightPoint = [-np.average(Xaverage[1])+0.03, -np.average(Yaverage[1]) , np.average(Zaverage[1])]
@@ -190,6 +166,13 @@ def FindOutside(PointList):
 			Yaverage[1].append(x[1])
 			Xaverage[1].append(x[0])
 	#PointCloudGen(CPoints)
+	if len(Xaverage[0]) == 0 or len(Xaverage[1]) == 0:
+		print Cont.O.color.RED + Cont.O.color.BOLD + "CAN'T SEE RED OR BLUE WHEEL" + Cont.O.color.END
+		stuff = String()
+		stuff.data = "CAN'T SEE RED OR BLUE WHEEL"
+		print stuff.data
+		conn.publish(stuff)
+		return 0, 0
 	L = [np.average(Xaverage[0]), np.average(Yaverage[0]), np.average(Zaverage[0])] #Finds Center of Red Wheel
 	R = [np.average(Xaverage[1]), np.average(Yaverage[1]), np.average(Zaverage[1])] #Finding Center of Blue Wheel
 	L = [-np.average(Xaverage[0])+0.03-0.15, -np.average(Yaverage[0]) , np.average(Zaverage[0])] # Left(-) or right(+), up down, forward backwards
@@ -201,11 +184,11 @@ def FindOutside(PointList):
 def ResetArms():
 	#Resets Arms
 	global RO, LO
-	PointPubber([0.2, -0.2, 0.32] , RO, 1) # RED, GREEN, BLUE based on Palm
-	hhC.adjustRightHand([0.0, 0.0, 0.0, 0.0, 0.0])
+	Cont.mC.PointPubber([0.2, -0.2, 0.32] , RO, 1) # RED, GREEN, BLUE based on Palm
+	Cont.hhC.adjustRightHand([0.0, 0.0, 0.0, 0.0, 0.0])
 	t.sleep(0.1)
-	PointPubber([-0.2, -0.2, 0.32] , LO, 0)
-	hhC.adjustLeftHand([0.0, 0.0, 0.0, 0.0, 0.0])
+	Cont.mC.PointPubber([-0.2, -0.2, 0.32] , LO, 0)
+	Cont.hhC.adjustLeftHand([0.0, 0.0, 0.0, 0.0, 0.0])
 
 def getSat(data):
 	global yC, yT, pC, pT
@@ -216,55 +199,65 @@ def getSat(data):
 	#print "hello"
 	return
 
-def RCC(RightPoint):
+def RCC(RightPoint, z):
 	global RO, LO
 	print "RightCounter Started" #OUTSIDE
-	PointPubber([RightPoint[0]-0.05, RightPoint[1]+0.3, RightPoint[2]+0.02], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.05, RightPoint[1]+0.3, RightPoint[2]+0.02], RO, 1)
 	t.sleep(15)
-	PointPubber([RightPoint[0]-0.05, RightPoint[1]-0.1, RightPoint[2]+0.02], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.05, RightPoint[1]-0.1, RightPoint[2]+0.02], RO, 1)
 	t.sleep(10)
-	PointPubber([RightPoint[0]-0.05, RightPoint[1]-0.15, RightPoint[2]-0.2], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.05, RightPoint[1]-0.15, RightPoint[2]-0.2], RO, 1)
 	t.sleep(10)
-	PointPubber([RightPoint[0]-0.05, RightPoint[1]+0.3, RightPoint[2]-0.2], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.05, RightPoint[1]+0.3, RightPoint[2]-0.2], RO, 1)
 	t.sleep(5)
 	print "RightCounter Ended"
 
-def RC(RightPoint):
+def RC(RightPoint, z):
 	global RO, LO
 	print "RightClockwise Started" #INSIDE
-	PointPubber([RightPoint[0]-0.3, RightPoint[1]+0.2, RightPoint[2]+0.02], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.3, RightPoint[1]+0.2, RightPoint[2]+0.02], RO, 1)
 	t.sleep(10)
-	PointPubber([RightPoint[0]-0.3, RightPoint[1]-0.2, RightPoint[2]+0.02], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.3, RightPoint[1]-0.2, RightPoint[2]+0.02], RO, 1)
 	t.sleep(10)
-	PointPubber([RightPoint[0]-0.3, RightPoint[1]-0.3, RightPoint[2]-0.15], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.3, RightPoint[1]-0.3, RightPoint[2]-0.15], RO, 1)
 	t.sleep(10)
-	PointPubber([RightPoint[0]-0.3, RightPoint[1]+0.2, RightPoint[2]-0.15], RO, 1)
+	Cont.mC.PointPubber([RightPoint[0]-0.3, RightPoint[1]+0.2, RightPoint[2]-0.15], RO, 1)
 	t.sleep(5)
 	print "RightClockwise Ended"
-def LCC(LeftPoint):
+def LCC(LeftPoint, z):
 	global RO, LO
 	print "LeftCounter Started"
-	PointPubber([LeftPoint[0]+0.3, LeftPoint[1]+0.2, LeftPoint[2]+0.02], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.3, LeftPoint[1]+0.2, LeftPoint[2]+0.02], LO, 0)
 	t.sleep(10)
-	PointPubber([LeftPoint[0]+0.3, LeftPoint[1]-0.2, LeftPoint[2]+0.02], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.3, LeftPoint[1]-0.2, LeftPoint[2]+0.02], LO, 0)
 	t.sleep(10)
-	PointPubber([LeftPoint[0]+0.3, LeftPoint[1]-0.3, LeftPoint[2]-0.15], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.3, LeftPoint[1]-0.3, LeftPoint[2]-0.15], LO, 0)
 	t.sleep(10)
-	PointPubber([LeftPoint[0]+0.3, LeftPoint[1]+0.2, LeftPoint[2]-0.15], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.3, LeftPoint[1]+0.2, LeftPoint[2]-0.15], LO, 0)
 	t.sleep(5)
 	print "LeftCounter Ended"
-def LC(LeftPoint):
+def LC(LeftPoint, z):
 	global RO, LO
 	print "LeftClockwise Started"
-	PointPubber([LeftPoint[0]+0.05, LeftPoint[1]+0.3, LeftPoint[2]+0.02], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.05, LeftPoint[1]+0.3, LeftPoint[2]+0.02], LO, 0)
 	t.sleep(15)
-	PointPubber([LeftPoint[0]+0.05, LeftPoint[1]-0.1, LeftPoint[2]+0.02], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.05, LeftPoint[1]-0.1, LeftPoint[2]+0.02], LO, 0)
 	t.sleep(10)
-	PointPubber([LeftPoint[0]+0.05, LeftPoint[1]-0.15, LeftPoint[2]-0.2], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.05, LeftPoint[1]-0.15, LeftPoint[2]-0.2], LO, 0)
 	t.sleep(10)
-	PointPubber([LeftPoint[0]+0.05, LeftPoint[1]+0.3, LeftPoint[2]-0.2], LO, 0)
+	Cont.mC.PointPubber([LeftPoint[0]+0.05, LeftPoint[1]+0.3, LeftPoint[2]-0.2], LO, 0)
 	t.sleep(5)
 	print "LeftClockwise Ended"
+
+def makeAdjustments(LeftPoint, RightPoint, LLC, LLCC, RRC, RRCC):
+	if LLC == '1' :
+		LC(LeftPoint)
+	if LLCC == '1' :
+		LCC(LeftPoint)
+	if RRC == '1' :
+		RC(RightPoint)
+	if RRCC == '1' :
+		RCC(RightPoint)
 
 def Task1Processor(PointList):
 	global firstTime
@@ -272,49 +265,150 @@ def Task1Processor(PointList):
 	#Angles of Left and Right Arm	
 	#Prints out Current Angles, or Success
 	if m.fabs(pC - pT) > m.radians(5):
-		print O.color.BOLD + O.color.UNDERLINE + O.color.DARKCYAN
+		print Cont.O.color.BOLD + Cont.O.color.UNDERLINE + Cont.O.color.DARKCYAN
 		print "Pitch (Blue) Delta: ", m.fabs(pC - pT)
-		print O.color.END
+		stuff = String()
+		stuff.data = "Pitch (Blue) Delta: ", m.fabs(pC - pT)
+		conn.publish(stuff)
+		print Cont.O.color.END
 	else:
-		print O.color.GREEN + O.color.BOLD + "PITCH GOOD!" + O.color.END
+		print Cont.O.color.GREEN + Cont.O.color.BOLD + "PITCH GOOD!" + Cont.O.color.END
+		stuff = String()
+		stuff.data = "PITCH GOOD!"
+		conn.publish(stuff)
 	if m.fabs(yC - yT) > m.radians(5):
-		print O.color.BOLD + O.color.UNDERLINE + O.color.DARKCYAN
+		print Cont.O.color.BOLD + Cont.O.color.UNDERLINE + Cont.O.color.DARKCYAN
 		print "Yaw (Red) Delta: ", m.fabs(yC - yT)
-		print O.color.END
+		stuff = String()
+		stuff.data = "Yaw (Red) Delta: ", m.fabs(yC - yT)
+		conn.publish(stuff)
+		print Cont.O.color.END
 	else:
-		print O.color.GREEN + O.color.BOLD + "YAW GOOD!" + O.color.END
+		print Cont.O.color.GREEN + Cont.O.color.BOLD + "YAW GOOD!" + Cont.O.color.END
+		stuff = String()
+		stuff.data = "YAW GOOD"
+		conn.publish(stuff)
 
 	#Finds Point, and Publishes
 	LeftPoint, RightPoint = FindOutside(PointList)
+	stuff = String()
+	stuff.data = "LEFT POINT: " + str(LeftPoint) + " RIGHT POINT: " + str(RightPoint)
+	conn.publish(stuff)
+	if LeftPoint == 0:
+		return False
+		#Stops the method from continuing
 
-	mC.addMarker(RightPoint, 1)
-	mC.addMarker(LeftPoint, 0)
+	Cont.mC.addMarker(RightPoint, 1)
+	Cont.mC.addMarker(LeftPoint, 0)
 
 	#Moves arms from Task1.py Reset Values to Proper reset values
 	if firstTime:
 		print LeftPoint, RightPoint
 		ResetArms()
 		print "First Time only"
+		stuff = String()
+		stuff.data = "First Time Only"
+		conn.publish(stuff)
 		t.sleep(20)
 		firstTime = False
 
 	#Adjusts hands to clenched
-	hhC.adjustRightHand([0.0, 1.0, 1.0, 1.0, 1.0])
-	hhC.adjustLeftHand([0.0, -1.0, -1.0, -1.0, -1.0])
+	Cont.hhC.adjustRightHand([0.0, 1.0, 1.0, 1.0, 1.0])
+	Cont.hhC.adjustLeftHand([0.0, -1.0, -1.0, -1.0, -1.0])
 	
 	#Moves arms in right directions
 	if m.fabs(pC - pT) > m.radians(5): #BLUE
-		print O.color.CYAN
+		print Cont.O.color.CYAN
 		if pC > pT:
-			RCC(RightPoint)
+			RCC(RightPoint, 0)
 		else:
-			RC(RightPoint)
+			RC(RightPoint, 0)
 	if m.fabs(yC - yT) > m.radians(5): #RED
 		if yC < yT:
-			LC(LeftPoint)
+			LC(LeftPoint, 0)
 		else:
-			LCC(LeftPoint)
-		print O.color.END
+			LCC(LeftPoint, 0)
+		print Cont.O.color.END
+
+def Task1ProcessorO(PointList, LC, LCC, RC, RCC, zAdjust, which):
+	global firstTime
+	global yC, yT, pC, pT
+	#Angles of Left and Right Arm	
+	#Prints out Current Angles, or Success
+	if m.fabs(pC - pT) > m.radians(5):
+		print Cont.O.color.BOLD + Cont.O.color.UNDERLINE + Cont.O.color.DARKCYAN
+		print "Pitch (Blue) Delta: ", m.fabs(pC - pT)
+		stuff = String()
+		stuff.data = "Pitch (Blue) Delta: ", m.fabs(pC - pT)
+		conn.publish(stuff)
+		print Cont.O.color.END
+	else:
+		print Cont.O.color.GREEN + Cont.O.color.BOLD + "PITCH GOOD!" + Cont.O.color.END
+		stuff = String()
+		stuff.data = "PITCH GOOD!"
+		conn.publish(stuff)
+	if m.fabs(yC - yT) > m.radians(5):
+		print Cont.O.color.BOLD + Cont.O.color.UNDERLINE + Cont.O.color.DARKCYAN
+		print "Yaw (Red) Delta: ", m.fabs(yC - yT)
+		stuff = String()
+		stuff.data = "Yaw (Red) Delta: ", m.fabs(yC - yT)
+		conn.publish(stuff)
+		print Cont.O.color.END
+	else:
+		print Cont.O.color.GREEN + Cont.O.color.BOLD + "YAW GOOD!" + Cont.O.color.END
+		stuff = String()
+		stuff.data = "YAW GOOD!"
+		conn.publish(stuff)
+
+	#Finds Point, and Publishes
+	LeftPoint, RightPoint = FindOutside(PointList)
+
+	Cont.mC.addMarker(RightPoint, 1)
+	Cont.mC.addMarker(LeftPoint, 0)
+
+	#Moves arms from Task1.py Reset Values to Proper reset values
+	if firstTime:
+		print LeftPoint, RightPoint
+		ResetArms()
+		print "First Time only"
+		stuff = String()
+		stuff.data = "First Time only"
+		conn.publish(stuff)
+		t.sleep(20)
+		firstTime = False
+
+	#Adjusts hands to clenched
+	Cont.hhC.adjustRightHand([0.0, 1.0, 1.0, 1.0, 1.0])
+	Cont.hhC.adjustLeftHand([0.0, -1.0, -1.0, -1.0, -1.0])
+	
+	#Moves arms in right directions
+	print Cont.O.color.CYAN
+	if m.fabs(pC - pT) > m.radians(5): #BLUE
+		if pC > pT:
+			RCC(RightPoint, 0)
+		else:
+			RC(RightPoint, 0)
+	if m.fabs(yC - yT) > m.radians(5): #RED
+		if yC < yT:
+			LC(LeftPoint, 0)
+		else:
+			LCC(LeftPoint, 0)
+	print Cont.O.color.END
+
+	makeAdjustments(LeftPoint, RightPoint, LC, LCC, RC, RCC)
+
+	if zAdjust != '0' :
+		if which == '1' :
+			LC(LeftPoint, zAdjust)
+		
+		if which == '2' :
+			LCC(LeftPoint, zAdjust)
+		
+		if which == '3' :
+			RC(RightPoint, zAdjust)
+		
+		if which == '4' :	
+			RCC(RightPoint, zAdjust)
 
 
 

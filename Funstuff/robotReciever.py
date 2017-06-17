@@ -18,8 +18,8 @@ from walkObj import walk
 
 Limage = 0
 Rimage = 0
-TCP_IP = 172.17.0.1 
-TCP_PORT = 32000 #ENTER PORT STUFF HERE
+TCP_IP = '127.0.0.1' 
+TCP_PORT = 33000 #ENTER PORT STUFF HERE
 
 sock= socket.socket()
 sock.connect((TCP_IP, TCP_PORT))

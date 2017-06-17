@@ -1,5 +1,5 @@
 #!/bin/bash
 . /home/docker/ws/install/setup.bash
-#python -m SimpleHTTPServer 8000 &
-#roscore -p 8001
-python ./serverSide.py && sender.py
+command python -m SimpleHTTPServer 8000 &
+command roscore -p 11311 &
+python ./Funstuff/serverSide.py && ./Funstuff/sender.py && ./dockerTest/serverSide.py

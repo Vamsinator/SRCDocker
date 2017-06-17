@@ -1,7 +1,20 @@
-#!/usr/bin/env python
+	#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+###########################################################################################################################################################
+#To use this code:
+#Pass in 6 arguments (You must pass in all arguments):
+#first argument: enter 1 to execute the left clockwise
+#second argument: enter 1 to execute the left counter-clokwise
+#third argument: enter 1 to execute the right clockwise
+#fourth argument: enter 1 to execute the right counter-clockwise
+#fifth argument: enter a number otherr than 0 to enter the z adjustment value
+#sixth argument: enter 1,2,3, or 4 to tell which z-value in the control (left clockwise, left counter-clockwise, right clockwise, right counter-clockwise)
+#EXample:: python PointCloudTask1.py 1 0 0 0 .07 2
+#IF YOU DONT WANT TO USE ARGUMENTS, IRGNORE THIS
+###########################################################################################################################################################
 import sys
 import PointCloudProcessor as PCP
+sys.path.insert(0,'..')
 import numpy as np
 import rospy
 from timeit import default_timer
@@ -18,31 +31,28 @@ import time as t
 import tf2_ros
 import tf2_geometry_msgs
 import tf
-import neckController as nC
 import message_filters
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
 from ihmc_msgs.msg import ChestTrajectoryRosMessage
 import random
 from srcsim.msg import Satellite
-import other as O
+from HelperCode import other as O
+import sys
+from std_msgs.msg import String
 gatekeeper = 0
 c = 0
 
-LPointPUB = rospy.Publisher("/LeftHandle", PointStamped, queue_size = 0)
-RPointPUB = rospy.Publisher("/RightHandle", PointStamped, queue_size = 0)
-Choosen = rospy.Publisher("/SogiPoints", PointCloud, queue_size = 1)
-
-LComm = rospy.Publisher("/SogiPoseL", PoseStamped, queue_size = 1)
-RComm = rospy.Publisher("/SogiPoseR", PoseStamped, queue_size = 1)
-
-chestTrajectoryPublisher = rospy.Publisher("/ihmc_ros/{0}/control/chest_trajectory".format(rospy.get_param('/ihmc_ros/robot_name')), ChestTrajectoryRosMessage, queue_size=1)	
+conn = rospy.Publisher("/Sendback", String, queue_size = 1)
 
 def CloudPreProcessor(pointcloud):
 	global Pub, gatekeeper, PointsList, tf_buffer, c
 	if gatekeeper % 4 == 0:
 		start = default_timer()
 		print O.color.CYAN + "PointCloud Aquired" , O.color.END
+		stuff = String()
+		stuff.value = "PointCloud Aquired"
+		conn.publish(stuff)
 		gen = pc2.read_points(pointcloud, skip_nans=True)
 		count = 0
 		if False:
@@ -72,9 +82,21 @@ def CloudPreProcessor(pointcloud):
 				distance = pow(x**2+y**2+z**2, 0.5)
 				PointsList.append([x, y, z, color])
 				count=count + 1
-			PCP.Task1Processor(PointsList)
+			if len(sys.argv) > 1 :
+				LC  = sys.argv[1]
+				LCC = sys.argv[2]
+				RC = sys.argv[3]
+				RCC = sys.argv[4]
+				zAdjust = sys.argv[5]
+				which = sys.argv[6]
+				PCP.Task1Processor(PointsList, LC, LCC, RC, RCC, zAdjust, which)
+			else :
+				PCP.Task1Processor(PointsList)
 		#Point are reversed since head is upside down
 		print "Time Taken: " + str(default_timer() - start)
+		stuff = String()
+		stuff.value = "Time Taken: " + str(default_timer() - start)
+		conn.publish(stuff)
 	gatekeeper += 1
 
 def Final1():
