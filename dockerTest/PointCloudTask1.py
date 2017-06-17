@@ -1,4 +1,4 @@
-	#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ###########################################################################################################################################################
 #To use this code:
@@ -51,7 +51,7 @@ def CloudPreProcessor(pointcloud):
 		start = default_timer()
 		print O.color.CYAN + "PointCloud Aquired" , O.color.END
 		stuff = String()
-		stuff.value = "PointCloud Aquired"
+		stuff.data = "PointCloud Aquired"
 		conn.publish(stuff)
 		gen = pc2.read_points(pointcloud, skip_nans=True)
 		count = 0
@@ -95,7 +95,7 @@ def CloudPreProcessor(pointcloud):
 		#Point are reversed since head is upside down
 		print "Time Taken: " + str(default_timer() - start)
 		stuff = String()
-		stuff.value = "Time Taken: " + str(default_timer() - start)
+		stuff.data = "Time Taken: " + str(default_timer() - start)
 		conn.publish(stuff)
 	gatekeeper += 1
 
