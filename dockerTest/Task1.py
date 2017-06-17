@@ -55,7 +55,7 @@ def getPoint(data, other):
 	MoveHand(x, y, z, xO, yO, zO, other[0], other[1])
 	print Cont.O.color.CYAN + "Going to Point" + Cont.O.color.END
 	stuff = String()
-	stuff.value = "Going to Point"
+	stuff.data = "Going to Point"
 	conn.publish(stuff)
 		
 def MoveHand(x, y, z, xO, yO, zO, side, time):
@@ -82,7 +82,7 @@ def MoveHand(x, y, z, xO, yO, zO, side, time):
 		Cont.aC.HandMsgMaker(time, side, POSITION, quat)
 		print Cont.O.color.GREEN + "Published Hand Trajectory" + Cont.O.color.END
 		stuff = String()
-		stuff.value = "Published Hand Trajectory"
+		stuff.data = "Published Hand Trajectory"
 		conn.publish(stuff)
 
 		POINT = PointStamped()
@@ -118,7 +118,7 @@ def Task1Main():
 		print Cont.O.color.GREEN + "Breaking Back" + Cont.O.color.END
 		Cont.tC.pelvisTF([m.radians(0.00), m.radians(30.00), m.radians(0.00)], 1.0, transformP)
 		stuff = String()
-		stuff.value = "In POSITION"
+		stuff.data = "In POSITION"
 		conn.publish(stuff)
 	else:
 		transformP = tf_buffer.lookup_transform("world", "pelvis", rospy.Time(0), rospy.Duration(1.0))
