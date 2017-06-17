@@ -41,7 +41,7 @@ EXPOSE 8008
 EXPOSE 33000
 EXPOSE 11311
 EXPOSE 8009
-ENV ROS_MASTER_URI http://192.168.0.255:11311
+#ENV ROS_MASTER_URI http://192.168.0.255:11311
 ENV PYTHONPATH = $PYTHONPATH:opt/ros/indigo/lib/python2.7/dist-packages:${WS}/src/srcsim
 ENV PATH = $PATH:/opt/ros/indigo/bin
 #RUN . /home/docker/ws/install/setup.bash

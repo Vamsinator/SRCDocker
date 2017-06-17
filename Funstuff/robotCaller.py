@@ -11,7 +11,7 @@ import socket
 flag = 0
 Limage = 0
 Rimage = 0
-TCP_IP = '192.168.0.2'
+TCP_IP = '192.168.2.150'
 TCP_PORT = 35000 #ENTER PORT STUFF HERE
 sock = socket.socket()
 sock.connect((TCP_IP, TCP_PORT))

@@ -21,7 +21,7 @@ sys.path.insert(0, 'dockerTest/')
 
 Limage = 0
 Rimage = 0
-TCP_IP = '192.168.0.2'
+TCP_IP = '192.168.2.150'
 TCP_PORT = 35000 #ENTER PORT STUFF HERE
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.bind((TCP_IP, TCP_PORT))
