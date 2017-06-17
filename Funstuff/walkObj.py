@@ -187,8 +187,8 @@ class walk:
             self.waitForFootsteps(1)
             return
 	if move == SHIFTUP:
-	    self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [.1, 0, 0], 0))
-            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [.1, 0, 0], 0))
+	    self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.RIGHT, [.2745, 0, 0], 0))
+            self.msg.footstep_data_list.append(self.createFootStepOffset(FootstepDataRosMessage.LEFT, [.2745, 0, 0], 0))
             self.footStepListPublisher.publish(self.msg)
             self.waitForFootsteps(2)
 	    return
